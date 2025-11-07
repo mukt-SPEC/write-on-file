@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:ffi';
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:http/http.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:weathery/model/user.dart';
@@ -64,10 +66,10 @@ class FileManager {
         //final user = User.fromJson(userFormat);
         return userFormat;
       } catch (e) {
-        return null;
-        print(e);
+        return e.toString() as Map<String, dynamic>?;
       }
     }
+    return null;
   }
 
   Future<User> writeJsonFile() async {
@@ -77,5 +79,50 @@ class FileManager {
     File file = await _JsonFile;
     await file.writeAsString(json.encode(userEncode));
     return user;
+  }
+
+  Future<File> get _imagefile async {
+    final path = await _directoryPath;
+    String filename = 'image.jpg';
+    return File('$path/$filename');
+  }
+
+  Future<Uint8List> writeImagefile() async {
+    Response response = await Client().get(
+      Uri.parse('https://picsum.photos/200/300'),
+    );
+
+    Uint8List bytes = response.bodyBytes;
+
+    File file = await _imagefile;
+    await file.writeAsBytes(bytes);
+
+    return bytes;
+  }
+
+  Future<Uint8List> readImagefile() async {
+    File file = await _imagefile;
+    Uint8List? bytes;
+
+    if (await file.exists()) {
+      try {
+        bytes = await file.readAsBytes();
+        return bytes;
+      } catch (e) {
+        return e.toString() as Uint8List;
+      }
+    }
+    return bytes!;
+  }
+
+  deleteImageFile() async {
+    File file = await _imagefile;
+    if (await file.exists()) {
+      try {
+        await file.delete();
+      } catch (e) {
+        return e.toString();
+      }
+    }
   }
 }
